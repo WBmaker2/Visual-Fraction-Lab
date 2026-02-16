@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>뚝딱! 분수 조각 탐험대</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="app-header">
+        <h1>뚝딱! 분수 조각 탐험대</h1>
+        <p>슬라이더를 움직여 분수를 만들고, 도형으로 보고, 두 분수를 비교해 보세요.</p>
+        <p class="achievement-text">
+          [4수01-10] 양의 등분할을 통하여 분수를 이해하고 읽고 쓸 수 있다.<br />
+          [4수01-11] 단위분수와 진분수의 의미를 알고 그 크기를 비교할 수 있다.
+        </p>
+      </header>
+
+      <main class="layout">
+        <section class="panel control-panel">
+          <h2>조작창</h2>
+
+          <div class="control-block">
+            <h3>분수 A</h3>
+            <label for="aDen">분모: <span id="aDenValue">4</span></label>
+            <input id="aDen" type="range" min="2" max="12" value="4" />
+            <label for="aNum">분자: <span id="aNumValue">3</span></label>
+            <input id="aNum" type="range" min="1" max="4" value="3" />
+          </div>
+
+          <div class="control-block">
+            <h3>분수 B</h3>
+            <label for="bDen">분모: <span id="bDenValue">6</span></label>
+            <input id="bDen" type="range" min="2" max="12" value="6" />
+            <label for="bNum">분자: <span id="bNumValue">2</span></label>
+            <input id="bNum" type="range" min="1" max="6" value="2" />
+          </div>
+
+          <div class="control-block">
+            <h3>모양 선택</h3>
+            <div class="shape-toggle">
+              <label><input type="radio" name="shape" value="circle" checked /> 원형(피자)</label>
+              <label><input type="radio" name="shape" value="bar" /> 막대(초콜릿)</label>
+            </div>
+          </div>
+
+          <div class="control-block">
+            <h3>학습 모드</h3>
+            <label>
+              <input id="unitMode" type="checkbox" />
+              단위분수 모드 (분자=1 고정)
+            </label>
+          </div>
+
+          <div class="control-block quiz-block">
+            <h3>정답 확인 및 랜덤 퀴즈</h3>
+            <p>어떤 분수가 더 클까요?</p>
+            <div class="quiz-buttons">
+              <button data-answer="A">분수 A가 더 크다</button>
+              <button data-answer="B">분수 B가 더 크다</button>
+              <button data-answer="E">같다</button>
+            </div>
+            <button id="checkBtn" class="primary">정답 확인</button>
+            <p id="quizResult" class="result-text"></p>
+            <button id="nextBtn">다음 문제</button>
+
+            <label for="difficulty" class="difficulty-label">랜덤 퀴즈 난이도 선택</label>
+            <select id="difficulty">
+              <option value="easy">쉬움</option>
+              <option value="normal" selected>보통</option>
+              <option value="hard">어려움</option>
+            </select>
+            <button id="startQuizBtn" class="primary">랜덤 10문제 시작</button>
+            <button id="stopQuizBtn">중간 정지 / 처음 화면</button>
+            <p id="quizProgress" class="progress-text">대기 중: 시작 버튼을 눌러 주세요.</p>
+          </div>
+        </section>
+
+        <section class="panel canvas-panel">
+          <h2>시각화 영역</h2>
+          <div class="models">
+            <article class="model-card">
+              <h3>분수 A</h3>
+              <canvas id="canvasA" width="260" height="220" aria-label="분수 A 도형"></canvas>
+              <p id="formulaA" class="formula">3/4</p>
+            </article>
+
+            <article class="model-card">
+              <h3>분수 B</h3>
+              <canvas id="canvasB" width="260" height="220" aria-label="분수 B 도형"></canvas>
+              <p id="formulaB" class="formula">2/6</p>
+            </article>
+          </div>
+
+          <div class="merge-card">
+            <h3>분수 조각 합치기</h3>
+            <p id="mergeText">분수 A와 더해 1이 되려면 <strong>1/4</strong> 조각이 더 필요해요.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
