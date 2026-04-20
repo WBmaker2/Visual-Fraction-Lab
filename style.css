@@ -169,8 +169,20 @@ button:hover {
   box-shadow: 0 4px 12px #00000018;
 }
 
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid #1f7a8c;
+  outline-offset: 2px;
+}
+
 .primary {
   background: #ffcd4f;
+}
+
+.quiz-buttons button[aria-pressed="true"] {
+  background: #ffcd4f;
+  box-shadow: inset 0 0 0 2px var(--line);
 }
 
 .result-text {

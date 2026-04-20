@@ -45,6 +45,11 @@ const els = {
   shapeOptions: Array.from(document.querySelectorAll('input[name="shape"]')),
 };
 
+const shapeLabels = {
+  circle: "원형 모델",
+  bar: "막대 모델",
+};
+
 function syncSliders(group) {
   const denInput = group === "a" ? els.aDen : els.bDen;
   const numInput = group === "a" ? els.aNum : els.bNum;
@@ -76,6 +81,18 @@ function updateLabels() {
   els.bNumValue.textContent = String(state.b.num);
   els.formulaA.textContent = `${state.a.num}/${state.a.den}`;
   els.formulaB.textContent = `${state.b.num}/${state.b.den}`;
+}
+
+function updateCanvasLabels() {
+  const shapeLabel = shapeLabels[state.shape] || "분수 모델";
+  els.canvasA.setAttribute(
+    "aria-label",
+    `분수 A: ${state.a.num}/${state.a.den}, ${shapeLabel}에서 ${state.a.den}개 중 ${state.a.num}개가 칠해졌습니다.`,
+  );
+  els.canvasB.setAttribute(
+    "aria-label",
+    `분수 B: ${state.b.num}/${state.b.den}, ${shapeLabel}에서 ${state.b.den}개 중 ${state.b.num}개가 칠해졌습니다.`,
+  );
 }
 
 function drawCircle(ctx, num, den, color) {
@@ -157,6 +174,34 @@ function compareFractions(x, y) {
   if (left > right) return "A";
   if (left < right) return "B";
   return "E";
+}
+
+function getAnswerLabel(answer) {
+  if (answer === "A") return "분수 A";
+  if (answer === "B") return "분수 B";
+  return "같다";
+}
+
+function getComparisonExplanation(correct) {
+  const left = state.a.num * state.b.den;
+  const right = state.b.num * state.a.den;
+  const expression = `${state.a.num}×${state.b.den}=${left}, ${state.b.num}×${state.a.den}=${right}`;
+
+  if (correct === "E") {
+    return `${expression}라서 두 분수는 같아요.`;
+  }
+
+  return `${expression}이므로 ${getAnswerLabel(correct)}가 더 커요.`;
+}
+
+function buildFeedback(isCorrect, correct, activeQuiz) {
+  const explanation = getComparisonExplanation(correct);
+  if (isCorrect) {
+    const lead = activeQuiz ? "정답! 아주 잘했어요." : "정답! 분수의 크기를 정확히 비교했어요.";
+    return `${lead} ${explanation}`;
+  }
+
+  return `아쉬워요. 정답은 "${getAnswerLabel(correct)}"예요. ${explanation}`;
 }
 
 function resetQuizMessage() {
@@ -252,7 +297,10 @@ function setControlsLocked(locked) {
 
 function clearSelectedAnswer() {
   state.selectedAnswer = null;
-  els.quizAnswerButtons.forEach((x) => x.classList.remove("primary"));
+  els.quizAnswerButtons.forEach((x) => {
+    x.classList.remove("primary");
+    x.setAttribute("aria-pressed", "false");
+  });
 }
 
 function applyQuestion(question) {
@@ -359,6 +407,7 @@ function goNextQuestion() {
 function render() {
   readState();
   updateLabels();
+  updateCanvasLabels();
   drawFraction(els.canvasA, state.a, "#ff7b89");
   drawFraction(els.canvasB, state.b, "#5ec2f7");
   updateMergeHint();
@@ -406,8 +455,12 @@ function bindEvents() {
   els.quizAnswerButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       state.selectedAnswer = btn.dataset.answer;
-      els.quizAnswerButtons.forEach((x) => x.classList.remove("primary"));
+      els.quizAnswerButtons.forEach((x) => {
+        x.classList.remove("primary");
+        x.setAttribute("aria-pressed", "false");
+      });
       btn.classList.add("primary");
+      btn.setAttribute("aria-pressed", "true");
     });
   });
 
@@ -429,11 +482,10 @@ function bindEvents() {
       const correct = compareFractions(state.a, state.b);
       if (state.selectedAnswer === correct) {
         state.quiz.score += 1;
-        els.quizResult.textContent = "정답! 아주 잘했어요.";
+        els.quizResult.textContent = buildFeedback(true, correct, true);
         els.quizResult.className = "result-text ok";
       } else {
-        const answerLabel = correct === "A" ? "분수 A" : correct === "B" ? "분수 B" : "같다";
-        els.quizResult.textContent = `아쉬워요. 정답은 "${answerLabel}"예요.`;
+        els.quizResult.textContent = buildFeedback(false, correct, true);
         els.quizResult.className = "result-text bad";
       }
       state.quiz.checkedCurrent = true;
@@ -442,13 +494,13 @@ function bindEvents() {
       return;
     }
 
+    readState();
     const correct = compareFractions(state.a, state.b);
     if (state.selectedAnswer === correct) {
-      els.quizResult.textContent = "정답! 분수의 크기를 정확히 비교했어요.";
+      els.quizResult.textContent = buildFeedback(true, correct, false);
       els.quizResult.className = "result-text ok";
     } else {
-      const answerLabel = correct === "A" ? "분수 A" : correct === "B" ? "분수 B" : "같다";
-      els.quizResult.textContent = `아쉬워요. 정답은 "${answerLabel}"예요.`;
+      els.quizResult.textContent = buildFeedback(false, correct, false);
       els.quizResult.className = "result-text bad";
     }
   });
