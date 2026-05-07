@@ -228,7 +228,11 @@ test("unit-fraction feedback explains that smaller denominators make larger piec
   elements.checkBtn.dispatchEvent("click");
 
   assert.match(elements.quizResult.textContent, /단위분수/);
-  assert.match(elements.quizResult.textContent, /분모가 작을수록/);
+  assert.match(elements.quizResult.textContent, /더 적게 나눌수록/);
+  assert.match(elements.quizResult.textContent, /전체를 4조각/);
+  assert.match(elements.quizResult.textContent, /전체를 6조각/);
+  assert.doesNotMatch(elements.quizResult.textContent, /×/);
+  assert.doesNotMatch(elements.quizResult.textContent, /확인:/);
 });
 
 test("manual slider changes clear the previous answer selection", () => {

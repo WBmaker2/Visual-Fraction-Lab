@@ -215,9 +215,11 @@ function getComparisonExplanation(correct) {
 
   if (state.a.num === 1 && state.b.num === 1) {
     if (correct === "E") {
-      return `두 분수는 같은 단위분수예요. 전체를 같은 수로 나누어 한 조각 크기가 같아요. 확인: ${expression}.`;
+      return `두 분수는 같은 단위분수예요. 전체를 같은 수로 나누어 한 조각 크기가 같아요.`;
     }
-    return `두 분수는 단위분수예요. 단위분수는 분모가 작을수록 한 조각이 더 커요. 확인: ${expression}이므로 ${getAnswerLabel(correct)}가 더 커요.`;
+    const largerFractionDen = correct === "A" ? state.a.den : state.b.den;
+    const otherDen = correct === "A" ? state.b.den : state.a.den;
+    return `두 분수는 한 조각만 색칠한 단위분수예요. ${getAnswerLabel(correct)}는 전체를 ${largerFractionDen}조각으로 나눈 한 조각이고, 다른 분수는 전체를 ${otherDen}조각으로 나눈 한 조각이에요. 같은 전체라면 더 적게 나눌수록 한 조각이 더 커요. 그래서 ${getAnswerLabel(correct)}가 더 커요.`;
   }
 
   if (correct === "E") {
