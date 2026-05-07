@@ -1,0 +1,11 @@
+{
+  "name": "visual-fraction-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "초등 분수 조각 시각화 학습 앱",
+  "scripts": {
+    "check": "node --check script.js && node --check tests/accessibility-feedback.test.js",
+    "test": "node --test tests/*.test.js",
+    "verify": "npm run check && npm test"
+  }
+}

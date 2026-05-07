@@ -41,6 +41,9 @@ const els = {
   quizProgress: document.getElementById("quizProgress"),
   quizResult: document.getElementById("quizResult"),
   unitMode: document.getElementById("unitMode"),
+  comparisonSummary: document.getElementById("comparisonSummary"),
+  modelTextA: document.getElementById("modelTextA"),
+  modelTextB: document.getElementById("modelTextB"),
   quizAnswerButtons: Array.from(document.querySelectorAll(".quiz-buttons button")),
   shapeOptions: Array.from(document.querySelectorAll('input[name="shape"]')),
 };
@@ -81,6 +84,22 @@ function updateLabels() {
   els.bNumValue.textContent = String(state.b.num);
   els.formulaA.textContent = `${state.a.num}/${state.a.den}`;
   els.formulaB.textContent = `${state.b.num}/${state.b.den}`;
+}
+
+function getComparisonLabel(correct) {
+  if (correct === "A") return "분수 A가 더 큽니다";
+  if (correct === "B") return "분수 B가 더 큽니다";
+  return "두 분수가 같습니다";
+}
+
+function updateModelDescriptions() {
+  els.modelTextA.textContent = `${state.a.den}조각 중 ${state.a.num}조각이 색칠되었습니다.`;
+  els.modelTextB.textContent = `${state.b.den}조각 중 ${state.b.num}조각이 색칠되었습니다.`;
+}
+
+function updateComparisonSummary() {
+  const correct = compareFractions(state.a, state.b);
+  els.comparisonSummary.textContent = `A ${state.a.num}/${state.a.den}, B ${state.b.num}/${state.b.den} · ${getComparisonLabel(correct)}.`;
 }
 
 function updateCanvasLabels() {
@@ -187,11 +206,25 @@ function getComparisonExplanation(correct) {
   const right = state.b.num * state.a.den;
   const expression = `${state.a.num}×${state.b.den}=${left}, ${state.b.num}×${state.a.den}=${right}`;
 
-  if (correct === "E") {
-    return `${expression}라서 두 분수는 같아요.`;
+  if (state.a.den === state.b.den) {
+    if (correct === "E") {
+      return `같은 크기의 조각 ${state.a.den}개 중 둘 다 ${state.a.num}조각이 색칠되어 같아요. 확인: ${expression}.`;
+    }
+    return `같은 크기의 조각 ${state.a.den}개 중 분수 A는 ${state.a.num}조각, 분수 B는 ${state.b.num}조각이 색칠되었어요. ${getAnswerLabel(correct)}가 더 많은 조각을 가지고 있어요. 확인: ${expression}.`;
   }
 
-  return `${expression}이므로 ${getAnswerLabel(correct)}가 더 커요.`;
+  if (state.a.num === 1 && state.b.num === 1) {
+    if (correct === "E") {
+      return `두 분수는 같은 단위분수예요. 전체를 같은 수로 나누어 한 조각 크기가 같아요. 확인: ${expression}.`;
+    }
+    return `두 분수는 단위분수예요. 단위분수는 분모가 작을수록 한 조각이 더 커요. 확인: ${expression}이므로 ${getAnswerLabel(correct)}가 더 커요.`;
+  }
+
+  if (correct === "E") {
+    return `서로 다른 크기의 조각을 같은 크기로 바꾸어 보면 ${expression}라서 두 분수는 같아요.`;
+  }
+
+  return `서로 다른 크기의 조각을 같은 크기로 바꾸어 보면 ${expression}이므로 ${getAnswerLabel(correct)}가 더 커요.`;
 }
 
 function buildFeedback(isCorrect, correct, activeQuiz) {
@@ -297,10 +330,44 @@ function setControlsLocked(locked) {
 
 function clearSelectedAnswer() {
   state.selectedAnswer = null;
-  els.quizAnswerButtons.forEach((x) => {
-    x.classList.remove("primary");
-    x.setAttribute("aria-pressed", "false");
+  syncAnswerButtons();
+}
+
+function syncAnswerButtons() {
+  els.quizAnswerButtons.forEach((button, index) => {
+    const selected = button.dataset.answer === state.selectedAnswer;
+    button.classList.toggle("primary", selected);
+    button.setAttribute("role", "radio");
+    button.setAttribute("aria-checked", selected ? "true" : "false");
+    button.setAttribute("tabindex", selected || (!state.selectedAnswer && index === 0) ? "0" : "-1");
   });
+}
+
+function selectAnswer(answer, shouldFocus = false) {
+  state.selectedAnswer = answer;
+  syncAnswerButtons();
+
+  if (shouldFocus) {
+    const button = els.quizAnswerButtons.find((item) => item.dataset.answer === answer);
+    if (button) {
+      button.focus();
+    }
+  }
+}
+
+function moveAnswerSelection(currentButton, direction) {
+  const currentIndex = els.quizAnswerButtons.indexOf(currentButton);
+  if (currentIndex < 0) return;
+
+  const lastIndex = els.quizAnswerButtons.length - 1;
+  const nextIndex =
+    direction === "first"
+      ? 0
+      : direction === "last"
+        ? lastIndex
+        : (currentIndex + direction + els.quizAnswerButtons.length) % els.quizAnswerButtons.length;
+
+  selectAnswer(els.quizAnswerButtons[nextIndex].dataset.answer, true);
 }
 
 function applyQuestion(question) {
@@ -407,6 +474,8 @@ function goNextQuestion() {
 function render() {
   readState();
   updateLabels();
+  updateModelDescriptions();
+  updateComparisonSummary();
   updateCanvasLabels();
   drawFraction(els.canvasA, state.a, "#ff7b89");
   drawFraction(els.canvasB, state.b, "#5ec2f7");
@@ -416,6 +485,7 @@ function render() {
 function bindEvents() {
   [els.aDen, els.aNum, els.bDen, els.bNum].forEach((input) => {
     input.addEventListener("input", () => {
+      clearSelectedAnswer();
       resetQuizMessage();
       render();
     });
@@ -424,6 +494,7 @@ function bindEvents() {
   els.shapeOptions.forEach((option) => {
     option.addEventListener("change", () => {
       state.shape = option.value;
+      clearSelectedAnswer();
       render();
     });
   });
@@ -436,6 +507,7 @@ function bindEvents() {
       els.aNum.value = "1";
       els.bNum.value = "1";
     }
+    clearSelectedAnswer();
     resetQuizMessage();
     render();
   });
@@ -454,13 +526,38 @@ function bindEvents() {
 
   els.quizAnswerButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      state.selectedAnswer = btn.dataset.answer;
-      els.quizAnswerButtons.forEach((x) => {
-        x.classList.remove("primary");
-        x.setAttribute("aria-pressed", "false");
-      });
-      btn.classList.add("primary");
-      btn.setAttribute("aria-pressed", "true");
+      selectAnswer(btn.dataset.answer);
+    });
+
+    btn.addEventListener("keydown", (event) => {
+      if (["ArrowDown", "ArrowRight"].includes(event.key)) {
+        event.preventDefault();
+        moveAnswerSelection(btn, 1);
+        return;
+      }
+
+      if (["ArrowUp", "ArrowLeft"].includes(event.key)) {
+        event.preventDefault();
+        moveAnswerSelection(btn, -1);
+        return;
+      }
+
+      if (event.key === "Home") {
+        event.preventDefault();
+        moveAnswerSelection(btn, "first");
+        return;
+      }
+
+      if (event.key === "End") {
+        event.preventDefault();
+        moveAnswerSelection(btn, "last");
+        return;
+      }
+
+      if (event.key === " " || event.key === "Enter") {
+        event.preventDefault();
+        selectAnswer(btn.dataset.answer);
+      }
     });
   });
 
@@ -508,4 +605,5 @@ function bindEvents() {
 
 bindEvents();
 els.nextBtn.disabled = true;
+syncAnswerButtons();
 render();

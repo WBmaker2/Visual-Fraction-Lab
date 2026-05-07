@@ -40,6 +40,7 @@ class FakeElement {
     this.className = "";
     this.disabled = false;
     this.max = "";
+    this.ownerDocument = null;
   }
 
   addEventListener(type, handler) {
@@ -53,6 +54,20 @@ class FakeElement {
     handlers.forEach((handler) => handler({ target: this }));
   }
 
+  dispatchKeyboardEvent(key) {
+    const handlers = this.listeners.get("keydown") || [];
+    const event = {
+      key,
+      target: this,
+      preventDefault() {
+        this.defaultPrevented = true;
+      },
+      defaultPrevented: false,
+    };
+    handlers.forEach((handler) => handler(event));
+    return event;
+  }
+
   setAttribute(name, value) {
     this.attributes.set(name, String(value));
   }
@@ -63,6 +78,12 @@ class FakeElement {
 
   closest() {
     return new FakeElement();
+  }
+
+  focus() {
+    if (this.ownerDocument) {
+      this.ownerDocument.activeElement = this;
+    }
   }
 
   getContext() {
@@ -102,6 +123,9 @@ function createHarness() {
     quizProgress: new FakeElement({ id: "quizProgress" }),
     quizResult: new FakeElement({ id: "quizResult" }),
     unitMode: new FakeElement({ id: "unitMode" }),
+    comparisonSummary: new FakeElement({ id: "comparisonSummary" }),
+    modelTextA: new FakeElement({ id: "modelTextA" }),
+    modelTextB: new FakeElement({ id: "modelTextB" }),
   };
   const answerButtons = ["A", "B", "E"].map((answer) => new FakeElement({ dataset: { answer } }));
   const shapeOptions = [
@@ -109,6 +133,7 @@ function createHarness() {
     new FakeElement({ value: "bar", checked: false }),
   ];
   const document = {
+    activeElement: null,
     getElementById(id) {
       return elements[id];
     },
@@ -118,20 +143,39 @@ function createHarness() {
       return [];
     },
   };
+  [...Object.values(elements), ...answerButtons, ...shapeOptions].forEach((element) => {
+    element.ownerDocument = document;
+  });
   const source = fs.readFileSync(path.join(__dirname, "..", "script.js"), "utf8");
   vm.runInNewContext(source, { document }, { filename: "script.js" });
 
   return { answerButtons, elements, shapeOptions };
 }
 
-test("answer buttons expose the selected state to assistive technology", () => {
+test("answer buttons use radio semantics and expose the selected state", () => {
   const { answerButtons } = createHarness();
 
   answerButtons[1].dispatchEvent("click");
 
-  assert.equal(answerButtons[0].getAttribute("aria-pressed"), "false");
-  assert.equal(answerButtons[1].getAttribute("aria-pressed"), "true");
-  assert.equal(answerButtons[2].getAttribute("aria-pressed"), "false");
+  assert.equal(answerButtons[0].getAttribute("role"), "radio");
+  assert.equal(answerButtons[1].getAttribute("role"), "radio");
+  assert.equal(answerButtons[2].getAttribute("role"), "radio");
+  assert.equal(answerButtons[0].getAttribute("aria-checked"), "false");
+  assert.equal(answerButtons[1].getAttribute("aria-checked"), "true");
+  assert.equal(answerButtons[2].getAttribute("aria-checked"), "false");
+  assert.equal(answerButtons[0].getAttribute("tabindex"), "-1");
+  assert.equal(answerButtons[1].getAttribute("tabindex"), "0");
+  assert.equal(answerButtons[2].getAttribute("tabindex"), "-1");
+});
+
+test("answer radio buttons support arrow-key navigation", () => {
+  const { answerButtons } = createHarness();
+
+  answerButtons[0].dispatchKeyboardEvent("ArrowDown");
+
+  assert.equal(answerButtons[1].getAttribute("aria-checked"), "true");
+  assert.equal(answerButtons[1].getAttribute("tabindex"), "0");
+  assert.equal(answerButtons[1].ownerDocument.activeElement, answerButtons[1]);
 });
 
 test("canvas labels describe the current fraction and visual model", () => {
@@ -156,4 +200,79 @@ test("answer feedback explains the comparison with cross multiplication", () => 
   assert.match(elements.quizResult.textContent, /3\s*×\s*6\s*=\s*18/);
   assert.match(elements.quizResult.textContent, /2\s*×\s*4\s*=\s*8/);
   assert.match(elements.quizResult.textContent, /분수 A/);
+});
+
+test("same-denominator feedback uses piece-count reasoning before calculations", () => {
+  const { answerButtons, elements } = createHarness();
+
+  elements.bDen.value = "4";
+  elements.bNum.value = "2";
+  elements.bNum.dispatchEvent("input");
+  answerButtons[0].dispatchEvent("click");
+  elements.checkBtn.dispatchEvent("click");
+
+  assert.match(elements.quizResult.textContent, /같은 크기의 조각 4개/);
+  assert.match(elements.quizResult.textContent, /3조각/);
+  assert.match(elements.quizResult.textContent, /2조각/);
+});
+
+test("unit-fraction feedback explains that smaller denominators make larger pieces", () => {
+  const { answerButtons, elements } = createHarness();
+
+  elements.unitMode.checked = true;
+  elements.unitMode.dispatchEvent("change");
+  elements.aDen.value = "4";
+  elements.bDen.value = "6";
+  elements.aDen.dispatchEvent("input");
+  answerButtons[0].dispatchEvent("click");
+  elements.checkBtn.dispatchEvent("click");
+
+  assert.match(elements.quizResult.textContent, /단위분수/);
+  assert.match(elements.quizResult.textContent, /분모가 작을수록/);
+});
+
+test("manual slider changes clear the previous answer selection", () => {
+  const { answerButtons, elements } = createHarness();
+
+  answerButtons[0].dispatchEvent("click");
+  elements.aNum.value = "2";
+  elements.aNum.dispatchEvent("input");
+
+  assert.equal(answerButtons[0].getAttribute("aria-checked"), "false");
+  assert.equal(answerButtons[1].getAttribute("aria-checked"), "false");
+  assert.equal(answerButtons[2].getAttribute("aria-checked"), "false");
+});
+
+test("model descriptions and comparison summary update with current values", () => {
+  const { elements } = createHarness();
+
+  assert.match(elements.modelTextA.textContent, /4조각 중 3조각/);
+  assert.match(elements.modelTextB.textContent, /6조각 중 2조각/);
+  assert.match(elements.comparisonSummary.textContent, /A 3\/4/);
+  assert.match(elements.comparisonSummary.textContent, /B 2\/6/);
+
+  elements.aNum.value = "1";
+  elements.aNum.dispatchEvent("input");
+
+  assert.match(elements.modelTextA.textContent, /4조각 중 1조각/);
+  assert.match(elements.comparisonSummary.textContent, /A 1\/4/);
+});
+
+test("quiz flow enables next only after checking an answer", () => {
+  const { answerButtons, elements } = createHarness();
+
+  elements.startQuizBtn.dispatchEvent("click");
+
+  const a = { num: Number(elements.aNum.value), den: Number(elements.aDen.value) };
+  const b = { num: Number(elements.bNum.value), den: Number(elements.bDen.value) };
+  const correct =
+    a.num * b.den > b.num * a.den ? "A" : a.num * b.den < b.num * a.den ? "B" : "E";
+  const answerButton = answerButtons.find((button) => button.dataset.answer === correct);
+
+  assert.equal(elements.nextBtn.disabled, true);
+  answerButton.dispatchEvent("click");
+  elements.checkBtn.dispatchEvent("click");
+
+  assert.equal(elements.nextBtn.disabled, false);
+  assert.match(elements.quizProgress.textContent, /현재 점수/);
 });

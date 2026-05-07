@@ -18,6 +18,10 @@
       </header>
 
       <main class="layout">
+        <div class="comparison-summary" aria-live="polite">
+          <p id="comparisonSummary">A 3/4, B 2/6 · 분수 A가 더 큽니다.</p>
+        </div>
+
         <section class="panel control-panel">
           <h2>조작창</h2>
 
@@ -57,9 +61,13 @@
             <h3>정답 확인 및 랜덤 퀴즈</h3>
             <p id="quizQuestion">어떤 분수가 더 클까요?</p>
             <div class="quiz-buttons" role="radiogroup" aria-labelledby="quizQuestion">
-              <button type="button" data-answer="A" aria-pressed="false">분수 A가 더 크다</button>
-              <button type="button" data-answer="B" aria-pressed="false">분수 B가 더 크다</button>
-              <button type="button" data-answer="E" aria-pressed="false">같다</button>
+              <button type="button" role="radio" data-answer="A" aria-checked="false" tabindex="0">
+                분수 A가 더 크다
+              </button>
+              <button type="button" role="radio" data-answer="B" aria-checked="false" tabindex="-1">
+                분수 B가 더 크다
+              </button>
+              <button type="button" role="radio" data-answer="E" aria-checked="false" tabindex="-1">같다</button>
             </div>
             <button id="checkBtn" class="primary" type="button">정답 확인</button>
             <p id="quizResult" class="result-text" aria-live="polite" aria-atomic="true"></p>
@@ -90,6 +98,7 @@
                 aria-label="분수 A: 3/4, 원형 모델"
               ></canvas>
               <p id="formulaA" class="formula">3/4</p>
+              <p id="modelTextA" class="model-text">4조각 중 3조각이 색칠되었습니다.</p>
             </article>
 
             <article class="model-card">
@@ -102,6 +111,7 @@
                 aria-label="분수 B: 2/6, 원형 모델"
               ></canvas>
               <p id="formulaB" class="formula">2/6</p>
+              <p id="modelTextB" class="model-text">6조각 중 2조각이 색칠되었습니다.</p>
             </article>
           </div>
 
