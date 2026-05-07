@@ -191,18 +191,22 @@ test("canvas labels describe the current fraction and visual model", () => {
   assert.match(elements.canvasA.getAttribute("aria-label") || "", /1\/4/);
 });
 
-test("answer feedback explains the comparison with cross multiplication", () => {
+test("answer feedback explains unlike denominators with equivalent pieces", () => {
   const { answerButtons, elements } = createHarness();
 
   answerButtons[0].dispatchEvent("click");
   elements.checkBtn.dispatchEvent("click");
 
-  assert.match(elements.quizResult.textContent, /3\s*×\s*6\s*=\s*18/);
-  assert.match(elements.quizResult.textContent, /2\s*×\s*4\s*=\s*8/);
-  assert.match(elements.quizResult.textContent, /분수 A/);
+  assert.match(elements.quizResult.textContent, /같은 크기 조각/);
+  assert.match(elements.quizResult.textContent, /12개/);
+  assert.match(elements.quizResult.textContent, /분수 A는 9조각/);
+  assert.match(elements.quizResult.textContent, /분수 B는 4조각/);
+  assert.match(elements.quizResult.textContent, /분수 A가 더 커요/);
+  assert.doesNotMatch(elements.quizResult.textContent, /×/);
+  assert.doesNotMatch(elements.quizResult.textContent, /확인:/);
 });
 
-test("same-denominator feedback uses piece-count reasoning before calculations", () => {
+test("same-denominator feedback uses piece-count reasoning without calculations", () => {
   const { answerButtons, elements } = createHarness();
 
   elements.bDen.value = "4";
@@ -214,6 +218,8 @@ test("same-denominator feedback uses piece-count reasoning before calculations",
   assert.match(elements.quizResult.textContent, /같은 크기의 조각 4개/);
   assert.match(elements.quizResult.textContent, /3조각/);
   assert.match(elements.quizResult.textContent, /2조각/);
+  assert.doesNotMatch(elements.quizResult.textContent, /×/);
+  assert.doesNotMatch(elements.quizResult.textContent, /확인:/);
 });
 
 test("unit-fraction feedback explains that smaller denominators make larger pieces", () => {
@@ -231,6 +237,26 @@ test("unit-fraction feedback explains that smaller denominators make larger piec
   assert.match(elements.quizResult.textContent, /더 적게 나눌수록/);
   assert.match(elements.quizResult.textContent, /전체를 4조각/);
   assert.match(elements.quizResult.textContent, /전체를 6조각/);
+  assert.doesNotMatch(elements.quizResult.textContent, /×/);
+  assert.doesNotMatch(elements.quizResult.textContent, /확인:/);
+});
+
+test("equal unlike-denominator feedback compares the same number of pieces", () => {
+  const { answerButtons, elements } = createHarness();
+
+  elements.aNum.value = "1";
+  elements.aDen.value = "2";
+  elements.bNum.value = "2";
+  elements.bDen.value = "4";
+  elements.aNum.dispatchEvent("input");
+  answerButtons[2].dispatchEvent("click");
+  elements.checkBtn.dispatchEvent("click");
+
+  assert.match(elements.quizResult.textContent, /같은 크기 조각/);
+  assert.match(elements.quizResult.textContent, /4개/);
+  assert.match(elements.quizResult.textContent, /분수 A도 2조각/);
+  assert.match(elements.quizResult.textContent, /분수 B도 2조각/);
+  assert.match(elements.quizResult.textContent, /두 분수는 같아요/);
   assert.doesNotMatch(elements.quizResult.textContent, /×/);
   assert.doesNotMatch(elements.quizResult.textContent, /확인:/);
 });

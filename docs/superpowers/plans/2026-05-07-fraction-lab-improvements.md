@@ -44,7 +44,7 @@
 - [x] Change answer explanations so visual and grade-level reasoning comes first.
 - [x] Use same-denominator comparison when denominators match.
 - [x] Use unit-fraction wording when both numerators are 1.
-- [x] Keep cross multiplication as a supporting check for unlike denominators.
+- [x] Explain unlike denominators by converting both fractions into the same-size pieces.
 - [x] Add tests for same-denominator, unit-fraction, and unlike-denominator feedback.
 
 ### Task 4: Improve Mobile Learning Flow and Touch Targets

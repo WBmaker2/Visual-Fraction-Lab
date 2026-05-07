@@ -167,14 +167,23 @@ function drawFraction(canvas, fraction, color) {
 }
 
 function simplify(num, den) {
-  let a = num;
-  let b = den;
+  const divisor = getGreatestCommonDivisor(num, den);
+  return { num: num / divisor, den: den / divisor };
+}
+
+function getGreatestCommonDivisor(x, y) {
+  let a = Math.abs(x);
+  let b = Math.abs(y);
   while (b !== 0) {
     const t = b;
     b = a % b;
     a = t;
   }
-  return { num: num / a, den: den / a };
+  return a;
+}
+
+function getLeastCommonMultiple(x, y) {
+  return (x * y) / getGreatestCommonDivisor(x, y);
 }
 
 function updateMergeHint() {
@@ -202,15 +211,11 @@ function getAnswerLabel(answer) {
 }
 
 function getComparisonExplanation(correct) {
-  const left = state.a.num * state.b.den;
-  const right = state.b.num * state.a.den;
-  const expression = `${state.a.num}×${state.b.den}=${left}, ${state.b.num}×${state.a.den}=${right}`;
-
   if (state.a.den === state.b.den) {
     if (correct === "E") {
-      return `같은 크기의 조각 ${state.a.den}개 중 둘 다 ${state.a.num}조각이 색칠되어 같아요. 확인: ${expression}.`;
+      return `같은 크기의 조각 ${state.a.den}개 중 둘 다 ${state.a.num}조각이 색칠되어 같아요.`;
     }
-    return `같은 크기의 조각 ${state.a.den}개 중 분수 A는 ${state.a.num}조각, 분수 B는 ${state.b.num}조각이 색칠되었어요. ${getAnswerLabel(correct)}가 더 많은 조각을 가지고 있어요. 확인: ${expression}.`;
+    return `같은 크기의 조각 ${state.a.den}개 중 분수 A는 ${state.a.num}조각, 분수 B는 ${state.b.num}조각이 색칠되었어요. 더 많이 색칠된 ${getAnswerLabel(correct)}가 더 커요.`;
   }
 
   if (state.a.num === 1 && state.b.num === 1) {
@@ -222,11 +227,14 @@ function getComparisonExplanation(correct) {
     return `두 분수는 한 조각만 색칠한 단위분수예요. ${getAnswerLabel(correct)}는 전체를 ${largerFractionDen}조각으로 나눈 한 조각이고, 다른 분수는 전체를 ${otherDen}조각으로 나눈 한 조각이에요. 같은 전체라면 더 적게 나눌수록 한 조각이 더 커요. 그래서 ${getAnswerLabel(correct)}가 더 커요.`;
   }
 
+  const commonDenominator = getLeastCommonMultiple(state.a.den, state.b.den);
+  const aPieces = state.a.num * (commonDenominator / state.a.den);
+  const bPieces = state.b.num * (commonDenominator / state.b.den);
   if (correct === "E") {
-    return `서로 다른 크기의 조각을 같은 크기로 바꾸어 보면 ${expression}라서 두 분수는 같아요.`;
+    return `전체를 ${commonDenominator}개의 같은 크기 조각으로 다시 나눠 보면, 분수 A도 ${aPieces}조각, 분수 B도 ${bPieces}조각이 색칠된 것과 같아요. 그래서 두 분수는 같아요.`;
   }
 
-  return `서로 다른 크기의 조각을 같은 크기로 바꾸어 보면 ${expression}이므로 ${getAnswerLabel(correct)}가 더 커요.`;
+  return `전체를 ${commonDenominator}개의 같은 크기 조각으로 다시 나눠 보면, 분수 A는 ${aPieces}조각, 분수 B는 ${bPieces}조각이 색칠된 것과 같아요. 더 많이 색칠된 ${getAnswerLabel(correct)}가 더 커요.`;
 }
 
 function buildFeedback(isCorrect, correct, activeQuiz) {
